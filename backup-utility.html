@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Utility - Family Data Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard active">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-title">
+                <h2>💾 Backup Utility</h2>
+                <p>Backup data to Dialog Router USB</p>
+            </div>
+            <div class="user-info">
+                <button class="btn btn-secondary btn-sm" onclick="window.location.href='admin-dashboard.html'">
+                    ← Back to Dashboard
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <!-- Backup Status -->
+                <div class="glass-container" style="padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">📊 Backup Status</h3>
+
+                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span class="stat-card-title">Total Records</span>
+                                <div class="stat-icon primary">📁</div>
+                            </div>
+                            <div class="stat-value" id="totalRecords">0</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span class="stat-card-title">Last Backup</span>
+                                <div class="stat-icon success">🕒</div>
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;"
+                                id="lastBackup">
+                                Never
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup Options -->
+                <div class="glass-container" style="padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">💾 Create Backup</h3>
+
+                    <div style="display: grid; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="backupAsJSON()"
+                            style="justify-content: center; padding: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">📄</span>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 700;">Download as JSON</div>
+                                <div style="font-size: 0.875rem; opacity: 0.9;">Complete data with all fields</div>
+                            </div>
+                        </button>
+
+                        <button class="btn btn-success" onclick="backupAsCSV()"
+                            style="justify-content: center; padding: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">📊</span>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 700;">Download as CSV</div>
+                                <div style="font-size: 0.875rem; opacity: 0.9;">Spreadsheet format for Excel</div>
+                            </div>
+                        </button>
+
+                        <button class="btn btn-secondary" onclick="backupBoth()"
+                            style="justify-content: center; padding: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">📦</span>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 700;">Download Both Formats</div>
+                                <div style="font-size: 0.875rem; opacity: 0.9;">JSON + CSV backup files</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="glass-container" style="padding: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">📝 How to Save to Dialog Router USB</h3>
+
+                    <div style="color: var(--text-secondary); line-height: 1.8;">
+                        <ol style="padding-left: 1.5rem;">
+                            <li style="margin-bottom: 1rem;">
+                                <strong style="color: var(--text-primary);">Click a backup button above</strong> to
+                                download the backup file(s) to your computer's Downloads folder
+                            </li>
+                            <li style="margin-bottom: 1rem;">
+                                <strong style="color: var(--text-primary);">Access your Dialog router USB
+                                    drive:</strong>
+                                <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                    <li>Open File Explorer (Windows) or Finder (Mac)</li>
+                                    <li>Look for your router's shared network drive (usually \\\\ROUTER-IP\\USB or
+                                        similar)</li>
+                                    <li>Or access via router admin panel (usually http://192.168.1.1)</li>
+                                </ul>
+                            </li>
+                            <li style="margin-bottom: 1rem;">
+                                <strong style="color: var(--text-primary);">Create a backup folder</strong> on the USB
+                                drive (e.g., "FamilyDataBackups")
+                            </li>
+                            <li style="margin-bottom: 1rem;">
+                                <strong style="color: var(--text-primary);">Copy the downloaded backup files</strong>
+                                from your Downloads folder to the USB drive backup folder
+                            </li>
+                            <li>
+                                <strong style="color: var(--text-primary);">Verify the backup</strong> by opening the
+                                files to ensure they contain your data
+                            </li>
+                        </ol>
+
+                        <div
+                            style="margin-top: 2rem; padding: 1rem; background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary-color); border-radius: var(--radius-md);">
+                            <strong style="color: var(--primary-light);">💡 Tip:</strong>
+                            <span style="color: var(--text-secondary);">
+                                Create regular backups (weekly or monthly) to ensure your data is always safe. Keep
+                                multiple backup copies in different locations.
+                            </span>
+                        </div>
+
+                        <div
+                            style="margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success-color); border-radius: var(--radius-md);">
+                            <strong style="color: var(--success-color);">✓ Backup File Names:</strong>
+                            <span style="color: var(--text-secondary);">
+                                Files are automatically named with the current date (e.g.,
+                                family-data-backup-2025-12-18.json) for easy organization.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restore Section -->
+                <div class="glass-container" style="padding: 2rem; margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">📥 Restore from Backup</h3>
+
+                    <div style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                        <p>Restore family data from a previously saved JSON backup file.</p>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <input type="file" id="restoreFile" accept=".json" style="display: none;"
+                            onchange="handleRestoreFile()">
+
+                        <button class="btn btn-warning" onclick="document.getElementById('restoreFile').click()"
+                            style="justify-content: center;">
+                            📂 Select Backup File to Restore
+                        </button>
+
+                        <div
+                            style="padding: 1rem; background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning-color); border-radius: var(--radius-md);">
+                            <strong style="color: var(--warning-color);">⚠️ Warning:</strong>
+                            <span style="color: var(--text-secondary);">
+                                Restoring from backup will replace all current data. Make sure to create a backup of
+                                current data before restoring.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="backup-utility.js"></script>
+</body>
+
+</html>

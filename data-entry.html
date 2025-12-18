@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Entry Portal - Family Data Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard active">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-title">
+                <h2>📝 Data Entry Portal</h2>
+                <p>Add and search family records</p>
+            </div>
+            <div class="user-info">
+                <span class="user-badge" id="userBadge">Staff</span>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <!-- Quick Stats -->
+            <div class="stats-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Total Families</span>
+                        <div class="stat-icon primary">👨‍👩‍👧‍👦</div>
+                    </div>
+                    <div class="stat-value" id="totalFamilies">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Added Today</span>
+                        <div class="stat-icon success">📅</div>
+                    </div>
+                    <div class="stat-value" id="addedToday">0</div>
+                </div>
+            </div>
+
+            <!-- Add Family Form -->
+            <div class="glass-container" style="padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">➕ Add New Family</h3>
+
+                <form id="addFamilyForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="familyName">Family Name / Head of Household *</label>
+                            <input type="text" id="familyName" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactNumber">Contact Number *</label>
+                            <input type="tel" id="contactNumber" class="form-input" placeholder="0771234567" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" class="form-input" placeholder="family@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Full Address *</label>
+                        <textarea id="address" class="form-input" rows="2" required></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="area">Area</label>
+                            <input type="text" id="area" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="postalCode">Postal Code</label>
+                            <input type="text" id="postalCode" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numberOfMembers">Number of Members *</label>
+                            <input type="number" id="numberOfMembers" class="form-input" min="1" value="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes / Comments</label>
+                        <textarea id="notes" class="form-input" rows="2"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+                        <button type="submit" class="btn btn-primary">💾 Save Family</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search Section -->
+            <div class="glass-container" style="padding: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">🔍 Search Families</h3>
+
+                <div class="search-box" style="margin-bottom: 1.5rem;">
+                    <input type="text" id="searchInput" placeholder="Search by name, contact, or address..."
+                        onkeyup="searchFamilies()" style="width: 100%;">
+                </div>
+
+                <div id="searchResults">
+                    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        Enter search terms above to find families
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="data-entry.js"></script>
+</body>
+
+</html>

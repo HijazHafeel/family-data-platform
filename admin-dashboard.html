@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Family Data Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard active">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-title">
+                <h2>🏠 Admin Dashboard</h2>
+                <p>Complete family data management</p>
+            </div>
+            <div class="user-info">
+                <span class="user-badge" id="userBadge">Admin</span>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="dashboard-nav">
+            <button class="nav-tab active" data-tab="families" onclick="switchTab('families')">👨‍👩‍👧‍👦
+                Families</button>
+            <button class="nav-tab" data-tab="users" onclick="switchTab('users')">👤 Users Management</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Total Families</span>
+                        <div class="stat-icon primary">👨‍👩‍👧‍👦</div>
+                    </div>
+                    <div class="stat-value" id="totalFamilies">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Active Records</span>
+                        <div class="stat-icon success">✓</div>
+                    </div>
+                    <div class="stat-value" id="activeRecords">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Total Members</span>
+                        <div class="stat-icon warning">👥</div>
+                    </div>
+                    <div class="stat-value" id="totalMembers">0</div>
+                </div>
+
+                <div class="stat-card" onclick="switchTab('users')" style="cursor: pointer;">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">System Users</span>
+                        <div class="stat-icon primary">👤</div>
+                    </div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                </div>
+            </div>
+
+            <!-- Sections Container -->
+            <div id="familiesSection" class="tab-content active">
+                <!-- Family Data Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Family Records</h3>
+                        <div class="table-actions">
+                            <div class="search-box">
+                                <input type="text" id="searchInput" placeholder="Search families..."
+                                    onkeyup="searchFamilies()">
+                            </div>
+                            <button class="btn btn-success btn-sm" onclick="openAddFamilyModal()">
+                                ➕ Add Family
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="exportData()">
+                                📥 Export Data
+                            </button>
+                            <button class="btn btn-secondary btn-sm"
+                                onclick="window.location.href='backup-utility.html'">
+                                💾 Backup
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Family ID</th>
+                                    <th>Family Name</th>
+                                    <th>Contact</th>
+                                    <th>Email</th>
+                                    <th>Members</th>
+                                    <th>Address</th>
+                                    <th>Status</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="familyTableBody">
+                                <tr>
+                                    <td colspan="9"
+                                        style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                        No family records found. Click "Add Family" to get started.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- User Management Table -->
+                <div id="usersSection" class="tab-content">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>System Users</h3>
+                            <div class="table-actions">
+                                <div class="search-box">
+                                    <input type="text" id="userSearchInput" placeholder="Search users..."
+                                        onkeyup="searchUsers()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Full Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Organization</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <!-- Users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Family Modal -->
+    <div id="familyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Family</h3>
+                <button class="modal-close" onclick="closeFamilyModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="familyForm">
+                    <input type="hidden" id="familyId">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="familyName">Family Name / Head of Household *</label>
+                            <input type="text" id="familyName" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactNumber">Contact Number *</label>
+                            <input type="tel" id="contactNumber" class="form-input" placeholder="0771234567" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" class="form-input" placeholder="family@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Full Address *</label>
+                        <textarea id="address" class="form-input" rows="2" required></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="area">Area</label>
+                            <input type="text" id="area" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="postalCode">Postal Code</label>
+                            <input type="text" id="postalCode" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numberOfMembers">Number of Members *</label>
+                            <input type="number" id="numberOfMembers" class="form-input" min="1" value="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select id="status" class="form-input">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes / Comments</label>
+                        <textarea id="notes" class="form-input" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFamilyModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveFamilyData()">Save Family</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="admin-dashboard.js"></script>
+</body>
+
+</html>
