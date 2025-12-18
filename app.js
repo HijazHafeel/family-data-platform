@@ -132,9 +132,10 @@ function loginSuccess(user) {
 
 // Redirect to appropriate portal
 function redirectToPortal(role) {
-    if (role === 'admin') {
+    const currentPage = window.location.pathname.split('/').pop();
+    if (role === 'admin' && currentPage !== 'admin-dashboard.html') {
         window.location.href = 'admin-dashboard.html';
-    } else if (role === 'staff') {
+    } else if (role === 'staff' && currentPage !== 'data-entry.html') {
         window.location.href = 'data-entry.html';
     }
 }
