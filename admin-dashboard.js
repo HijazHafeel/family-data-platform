@@ -237,13 +237,7 @@ async function approveUser(userId, username) {
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
-            // For Firebase, we update status to active and role to admin
-            await fs.collection('users').doc(userId).update({
-                status: 'active',
-                role: 'admin',
-                approvedBy: AppState.currentUser.username,
-                updatedAt: Date.now()
-            });
+            await FirebaseDB.approveUser(userId, AppState.currentUser.username);
         } else {
             const users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
             const index = users.findIndex(u => u.id === userId || u.username === username);
@@ -271,7 +265,7 @@ async function rejectUser(userId, username) {
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
-            await fs.collection('users').doc(userId).delete();
+            await FirebaseDB.deleteUser(userId);
         } else {
             let users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
             users = users.filter(u => u.id !== userId && u.username !== username);
@@ -411,11 +405,13 @@ async function saveFamilyData() {
     }
 }
 
-// Delete family
+// Delete family with Undo
 async function deleteFamily(familyId) {
-    const confirmed = await confirmAction('Are you sure you want to delete this family record? This action cannot be undone.');
+    const familyToDelete = AppState.families.find(f => f.id === familyId);
+    if (!familyToDelete) return;
 
-    if (!confirmed) return;
+    // const confirmed = await confirmAction('Are you sure you want to delete this family record?');
+    // if (!confirmed) return;
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
@@ -425,12 +421,78 @@ async function deleteFamily(familyId) {
             localStorage.setItem('familiesData', JSON.stringify(AppState.families));
         }
 
-        showToast('Family deleted successfully', 'success');
+        // Show Undo option
+        showUndoToast('Family record deleted', () => restoreFamily(familyToDelete));
         await loadFamilies();
     } catch (error) {
         console.error('Error deleting family:', error);
         showToast('Error deleting family', 'error');
     }
+}
+
+// Restore family (Undo delete)
+async function restoreFamily(familyData) {
+    try {
+        if (AppState.isFirebaseReady && FirebaseDB) {
+            await FirebaseDB.restoreFamily(familyData.id, familyData);
+        } else {
+            AppState.families.push(familyData);
+            localStorage.setItem('familiesData', JSON.stringify(AppState.families));
+        }
+
+        showToast('Family record restored!', 'success');
+        await loadFamilies();
+    } catch (error) {
+        console.error('Error restoring family:', error);
+        showToast('Failed to restore record', 'error');
+    }
+}
+
+// Show toast with Undo button
+function showUndoToast(message, undoCallback) {
+    console.log('Showing undo toast:', message);
+    const toast = document.createElement('div');
+    toast.className = 'toast info';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.justifyContent = 'space-between';
+    toast.style.minWidth = '300px';
+    toast.style.zIndex = '9999';
+
+    toast.innerHTML = `
+        <span>${message}</span>
+        <button id="undoActionBtn" style="
+            background: rgba(255,255,255,0.2); 
+            border: none; 
+            color: white; 
+            padding: 6px 16px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-left: 12px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.4);
+        ">UNDO</button>
+    `;
+
+    document.body.appendChild(toast);
+
+    const btn = toast.querySelector('#undoActionBtn');
+    let isUndone = false;
+
+    btn.onclick = () => {
+        isUndone = true;
+        undoCallback();
+        toast.remove();
+    };
+
+    // Auto remove after 60 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+        }
+    }, 60000);
 }
 
 // Export data
@@ -459,3 +521,11 @@ document.addEventListener('click', (e) => {
         closeFamilyModal();
     }
 });
+
+// Confirm dialog
+function confirmAction(message) {
+    return new Promise((resolve) => {
+        const confirmed = confirm(message);
+        resolve(confirmed);
+    });
+}

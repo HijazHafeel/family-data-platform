@@ -44,38 +44,44 @@ async function handleSignup(e) {
     submitBtn.textContent = 'Creating Account...';
 
     try {
-        // Hash the password
-        const hashedPassword = await hashPassword(password);
+        // Create user in Firebase Auth if ready
+        if (AppState.isFirebaseReady && auth) {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
 
-        // Check if username already exists
-        const existingUser = await checkUsernameExists(username);
-        if (existingUser) {
-            showToast('Username already taken. Please choose another.', 'error');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Create Account';
-            return;
-        }
+            // Create user data for Firestore
+            const userData = {
+                uid: user.uid,
+                fullName,
+                username,
+                email,
+                role: role === 'admin' ? 'pending-admin' : role,
+                organization,
+                status: role === 'admin' ? 'pending' : 'active',
+                createdAt: Date.now(),
+                approvedBy: null
+            };
 
-        // Create user data
-        const userData = {
-            fullName,
-            username,
-            email,
-            password: hashedPassword,
-            role: role === 'admin' ? 'pending-admin' : role, // Admin accounts need approval
-            organization,
-            status: role === 'admin' ? 'pending' : 'active',
-            createdAt: Date.now(),
-            approvedBy: null
-        };
-
-        // Save user
-        if (AppState.isFirebaseReady && FirebaseDB) {
             await FirebaseDB.addUser(userData);
         } else {
-            // Save to localStorage
+            // Hash the password for LocalStorage fallback
+            const hashedPassword = await hashPassword(password);
+
+            // Create user data for localStorage
+            const userData = {
+                fullName,
+                username,
+                email,
+                password: hashedPassword,
+                role: role === 'admin' ? 'pending-admin' : role,
+                organization,
+                status: role === 'admin' ? 'pending' : 'active',
+                createdAt: Date.now(),
+                approvedBy: null,
+                id: 'USER' + Date.now()
+            };
+
             const users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
-            userData.id = 'USER' + Date.now();
             users.push(userData);
             localStorage.setItem('platformUsers', JSON.stringify(users));
         }

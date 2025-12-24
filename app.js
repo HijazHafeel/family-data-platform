@@ -45,7 +45,7 @@ async function handleLogin(e) {
     const password = document.getElementById('password').value;
 
     if (!username || !password) {
-        showToast('Please enter both username and password', 'error');
+        showToast('Please enter both email and password', 'error');
         return;
     }
 
@@ -54,61 +54,86 @@ async function handleLogin(e) {
     loginBtn.textContent = 'Logging in...';
 
     try {
-        // Hash the password
-        const hashedPassword = await hashPassword(password);
-
         let user = null;
 
-        // Check if Firebase is available
-        if (typeof firebase !== 'undefined' && FirebaseDB) {
-            // Try Firebase authentication
-            user = await FirebaseDB.getUserByUsername(username);
+        // --- PRIMARY: FIREBASE EMAIL AUTHENTICATION ---
+        if (AppState.isFirebaseReady && auth) {
+            try {
+                // Determine if login is email or username
+                const isEmail = username.includes('@');
+                let loginEmail = username;
 
-            if (user && user.password === hashedPassword) {
-                // Check if user is approved (for admin accounts)
-                if (user.status === 'pending') {
-                    showToast('Your account is pending admin approval', 'warning');
+                // Fallback: If username is provided, look up email in Firestore
+                if (!isEmail) {
+                    const profile = await FirebaseDB.getUserByUsername(username);
+                    if (profile) {
+                        loginEmail = profile.email;
+                    }
+                }
+
+                if (loginEmail && loginEmail.includes('@')) {
+                    // Official Firebase Authentication
+                    const userCredential = await auth.signInWithEmailAndPassword(loginEmail, password);
+
+                    // Fetch full profile from Firestore
+                    const allUsers = await FirebaseDB.getAllUsers();
+                    user = allUsers.find(u => u.email === loginEmail);
+
+                    if (user) {
+                        if (user.status === 'pending') {
+                            showToast('Account pending admin approval', 'warning');
+                            loginBtn.disabled = false;
+                            loginBtn.textContent = 'Login';
+                            return;
+                        }
+                        loginSuccess(user);
+                        return;
+                    }
+                }
+            } catch (authError) {
+                console.warn('Firebase Auth failed:', authError.message);
+                // If it's a standard auth error, show specific message and stop
+                if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
+                    showToast('Invalid email or password', 'error');
                     loginBtn.disabled = false;
                     loginBtn.textContent = 'Login';
                     return;
                 }
-
-                loginSuccess(user);
-                return;
             }
         }
 
-        // Check registered users in localStorage
-        const registeredUsers = JSON.parse(localStorage.getItem('platformUsers') || '[]');
-        user = registeredUsers.find(u => u.username === username && u.password === hashedPassword);
+        // --- SECONDARY: LEGACY FALLBACK (Default Users & LocalStorage) ---
+        const hashedPassword = await hashPassword(password);
 
-        if (user) {
-            // Check if user is approved
-            if (user.status === 'pending') {
-                showToast('Your account is pending admin approval', 'warning');
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
-                return;
-            }
-
-            loginSuccess(user);
-            return;
-        }
-
-        // Fallback to default users if not found
+        // Check default users (admin/staff)
         const defaultUsers = await getDefaultUsers();
         user = defaultUsers.find(u => u.username === username && u.password === hashedPassword);
 
         if (user) {
             loginSuccess(user);
+            return;
+        }
+
+        // Check LocalStorage for registered users
+        const registeredUsers = JSON.parse(localStorage.getItem('platformUsers') || '[]');
+        user = registeredUsers.find(u => (u.username === username || u.email === username) && u.password === hashedPassword);
+
+        if (user) {
+            if (user.status === 'pending') {
+                showToast('Account pending admin approval', 'warning');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+                return;
+            }
+            loginSuccess(user);
         } else {
-            showToast('Invalid username or password', 'error');
+            showToast('Invalid credentials. Please try again.', 'error');
             loginBtn.disabled = false;
             loginBtn.textContent = 'Login';
         }
     } catch (error) {
         console.error('Login error:', error);
-        showToast('Login failed. Please try again.', 'error');
+        showToast('Login failed: ' + error.message, 'error');
         loginBtn.disabled = false;
         loginBtn.textContent = 'Login';
     }

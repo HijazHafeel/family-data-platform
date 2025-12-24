@@ -26,9 +26,9 @@ function initializeFirebase() {
             app = firebase.app();
         }
 
-        db = firebase.database(); // Still initialized for backward compatibility
+        db = firebase.database();
         auth = firebase.auth();
-        fs = firebase.firestore(); // Firestore initialization
+        fs = firebase.firestore();
 
         console.log('Firebase services initialized successfully');
         AppState.isFirebaseReady = true;
@@ -171,12 +171,47 @@ const FirebaseDB = {
         try {
             await fs.collection('users').doc(userId).update({
                 status: status,
-                approvedBy: approvedBy,
+                approvedBy: approvedBy || null,
                 updatedAt: Date.now()
             });
             return true;
         } catch (error) {
             console.error('Error updating user status:', error);
+            throw error;
+        }
+    },
+
+    async approveUser(userId, adminUsername) {
+        try {
+            await fs.collection('users').doc(userId).update({
+                status: 'active',
+                role: 'admin',
+                approvedBy: adminUsername,
+                updatedAt: Date.now()
+            });
+            return true;
+        } catch (error) {
+            console.error('Error approving user:', error);
+            throw error;
+        }
+    },
+
+    async deleteUser(userId) {
+        try {
+            await fs.collection('users').doc(userId).delete();
+            return true;
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+        }
+    },
+
+    async restoreFamily(familyId, familyData) {
+        try {
+            await fs.collection('families').doc(familyId).set(familyData);
+            return true;
+        } catch (error) {
+            console.error('Error restoring family:', error);
             throw error;
         }
     },
