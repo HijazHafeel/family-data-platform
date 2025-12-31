@@ -86,6 +86,12 @@ async function handleLogin(e) {
                             loginBtn.textContent = 'Login';
                             return;
                         }
+                        if (user.status === 'disabled') {
+                            showToast('Account has been disabled. Contact admin.', 'error');
+                            loginBtn.disabled = false;
+                            loginBtn.textContent = 'Login';
+                            return;
+                        }
                         loginSuccess(user);
                         return;
                     }
@@ -121,6 +127,12 @@ async function handleLogin(e) {
         if (user) {
             if (user.status === 'pending') {
                 showToast('Account pending admin approval', 'warning');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+                return;
+            }
+            if (user.status === 'disabled') {
+                showToast('Account has been disabled. Contact admin.', 'error');
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
                 return;
@@ -175,13 +187,15 @@ async function getDefaultUsers() {
             username: 'admin',
             password: adminPassword,
             role: 'admin',
-            fullName: 'Administrator'
+            fullName: 'Administrator',
+            status: 'active'
         },
         {
             username: 'staff',
             password: staffPassword,
             role: 'staff',
-            fullName: 'Data Entry Staff'
+            fullName: 'Data Entry Staff',
+            status: 'active'
         }
     ];
 }

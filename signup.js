@@ -100,7 +100,19 @@ async function handleSignup(e) {
 
     } catch (error) {
         console.error('Signup error:', error);
-        showToast('Error creating account. Please try again.', 'error');
+
+        let errorMessage = 'Error creating account. Please try again.';
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email is already registered. Please login instead.';
+        } else if (error.code === 'auth/weak-password') {
+            errorMessage = 'Password is too weak. Please use a stronger password.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email address format.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        showToast(errorMessage, 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Create Account';
     }

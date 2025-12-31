@@ -111,7 +111,7 @@ function renderFamilyTable(families) {
                     <button class="btn btn-secondary btn-sm" onclick="editFamily('${family.id}')">
                         ✏️
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteFamily('${family.id}')">
+                    <button class="btn btn-danger btn-sm" onclick="confirmDeleteFamily('${family.id}')">
                         🗑️
                     </button>
                 </div>
@@ -176,7 +176,13 @@ function renderUserTable(users) {
         return;
     }
 
-    tbody.innerHTML = users.map(user => `
+    tbody.innerHTML = users.map(user => {
+        const isPending = user.status === 'pending';
+        const isActive = user.status === 'active';
+        const isDisabled = user.status === 'disabled';
+        const isCurrentUser = user.username === AppState.currentUser.username;
+
+        return `
         <tr>
             <td><strong>${sanitizeInput(user.username)}</strong></td>
             <td>${sanitizeInput(user.fullName || 'N/A')}</td>
@@ -188,27 +194,42 @@ function renderUserTable(users) {
             </td>
             <td>${sanitizeInput(user.organization || 'N/A')}</td>
             <td>
-                <span class="badge ${user.status === 'active' ? 'active' : (user.status === 'pending' ? 'inactive' : 'danger')}">
+                <span class="badge ${isActive ? 'active' : (isPending ? 'inactive' : 'danger')}">
                     ${user.status || 'active'}
                 </span>
             </td>
             <td>${formatDate(user.createdAt)}</td>
             <td>
                 <div class="table-actions-cell">
-                    ${user.status === 'pending' ? `
-                        <button class="btn btn-success btn-sm" onclick="approveUser('${user.id}', '${user.username}')" title="Approve">
-                            ✅
+                    ${isPending ? `
+                        <button class="btn btn-success btn-sm" onclick="approveUser('${user.id}', '${user.username}')" title="Approve Admin">
+                            ✅ Approve
                         </button>
-                    ` : ''}
-                    ${user.username !== AppState.currentUser.username ? `
-                        <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.id}', '${user.username}')" title="Delete/Reject">
-                            🗑️
+                        <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.id}', '${user.username}')" title="Reject">
+                            ❌ Reject
                         </button>
+                    ` : isActive && !isCurrentUser ? `
+                        <button class="btn btn-warning btn-sm" onclick="toggleUserStatus('${user.id}', '${user.username}', 'disabled')" title="Disable Access">
+                            🚫 Disable
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${user.id}', '${user.username}')" title="Delete User">
+                            🗑️ Delete
+                        </button>
+                    ` : isDisabled && !isCurrentUser ? `
+                        <button class="btn btn-success btn-sm" onclick="toggleUserStatus('${user.id}', '${user.username}', 'active')" title="Enable Access">
+                            ✅ Enable
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${user.id}', '${user.username}')" title="Delete User">
+                            🗑️ Delete
+                        </button>
+                    ` : isCurrentUser ? `
+                        <span style="color: var(--text-muted); font-size: 0.875rem;">Current User</span>
                     ` : ''}
                 </div>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Search users
@@ -230,10 +251,11 @@ function searchUsers() {
     renderUserTable(filtered);
 }
 
-// Approve user
+// Approve user (for pending admin accounts)
 async function approveUser(userId, username) {
-    const confirmed = await confirmAction(`Are you sure you want to approve admin account for @${username}?`);
-    if (!confirmed) return;
+    if (!confirm(`Approve admin account for @${username}?\n\nThey will have full admin privileges including:\n- View all family data\n- Edit/delete records\n- Manage users\n- Access backups`)) {
+        return;
+    }
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
@@ -250,7 +272,7 @@ async function approveUser(userId, username) {
             }
         }
 
-        showToast(`Account @${username} approved successfully`, 'success');
+        showToast(`✅ Admin account @${username} approved successfully`, 'success');
         await loadUsers();
     } catch (error) {
         console.error('Error approving user:', error);
@@ -258,10 +280,43 @@ async function approveUser(userId, username) {
     }
 }
 
-// Reject/Delete user
+// Toggle user status (Enable/Disable)
+async function toggleUserStatus(userId, username, newStatus) {
+    const action = newStatus === 'active' ? 'enable' : 'disable';
+    const actionCaps = action.charAt(0).toUpperCase() + action.slice(1);
+    const actionText = newStatus === 'active' ? 'enabled' : 'disabled';
+
+    if (!confirm(`${actionCaps} access for @${username}?\n\n${newStatus === 'disabled' ? 'User will not be able to login until re-enabled.' : 'User will regain full access to the system.'}`)) {
+        return;
+    }
+
+    try {
+        if (AppState.isFirebaseReady && FirebaseDB) {
+            await FirebaseDB.updateUserStatus(userId, newStatus, AppState.currentUser.username);
+        } else {
+            const users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
+            const index = users.findIndex(u => u.id === userId || u.username === username);
+            if (index !== -1) {
+                users[index].status = newStatus;
+                users[index].updatedAt = Date.now();
+                users[index].updatedBy = AppState.currentUser.username;
+                localStorage.setItem('platformUsers', JSON.stringify(users));
+            }
+        }
+
+        showToast(`✅ User @${username} ${actionText} successfully`, 'success');
+        await loadUsers();
+    } catch (error) {
+        console.error('Error updating user status:', error);
+        showToast('Error updating user status', 'error');
+    }
+}
+
+// Reject pending user
 async function rejectUser(userId, username) {
-    const confirmed = await confirmAction(`Are you sure you want to remove user @${username}? This cannot be undone.`);
-    if (!confirmed) return;
+    if (!confirm(`Reject admin request from @${username}?\n\nThis will permanently delete their account.`)) {
+        return;
+    }
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
@@ -272,11 +327,39 @@ async function rejectUser(userId, username) {
             localStorage.setItem('platformUsers', JSON.stringify(users));
         }
 
-        showToast(`User @${username} removed`, 'success');
+        showToast(`❌ Admin request from @${username} rejected`, 'success');
         await loadUsers();
     } catch (error) {
-        console.error('Error removing user:', error);
-        showToast('Error removing user', 'error');
+        console.error('Error rejecting user:', error);
+        showToast('Error rejecting user', 'error');
+    }
+}
+
+// Delete user permanently
+async function deleteUserConfirm(userId, username) {
+    if (!confirm(`⚠️ PERMANENTLY DELETE user @${username}?\n\nThis will:\n- Remove all their data\n- Cannot be undone\n- Remove their login access forever\n\nAre you sure?`)) {
+        return;
+    }
+
+    // Double confirmation for safety
+    if (!confirm(`Final confirmation: Delete @${username}?\n\nClick OK to permanently delete, or Cancel to keep the user.`)) {
+        return;
+    }
+
+    try {
+        if (AppState.isFirebaseReady && FirebaseDB) {
+            await FirebaseDB.deleteUser(userId);
+        } else {
+            let users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
+            users = users.filter(u => u.id !== userId && u.username !== username);
+            localStorage.setItem('platformUsers', JSON.stringify(users));
+        }
+
+        showToast(`🗑️ User @${username} permanently deleted`, 'success');
+        await loadUsers();
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        showToast('Error deleting user', 'error');
     }
 }
 
@@ -405,13 +488,26 @@ async function saveFamilyData() {
     }
 }
 
-// Delete family with Undo
+// Confirm delete family (NEW - Fixed delete function)
+async function confirmDeleteFamily(familyId) {
+    const familyToDelete = AppState.families.find(f => f.id === familyId);
+    if (!familyToDelete) {
+        showToast('Family not found', 'error');
+        return;
+    }
+
+    // Show confirmation dialog
+    if (!confirm(`⚠️ Delete family record for "${familyToDelete.familyName}"?\n\nYou will have 60 seconds to undo this action.`)) {
+        return;
+    }
+
+    await deleteFamily(familyId);
+}
+
+// Delete family with Undo (FIXED)
 async function deleteFamily(familyId) {
     const familyToDelete = AppState.families.find(f => f.id === familyId);
     if (!familyToDelete) return;
-
-    // const confirmed = await confirmAction('Are you sure you want to delete this family record?');
-    // if (!confirmed) return;
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
@@ -421,9 +517,11 @@ async function deleteFamily(familyId) {
             localStorage.setItem('familiesData', JSON.stringify(AppState.families));
         }
 
+        // Reload the table to show changes
+        await loadFamilies();
+
         // Show Undo option
         showUndoToast('Family record deleted', () => restoreFamily(familyToDelete));
-        await loadFamilies();
     } catch (error) {
         console.error('Error deleting family:', error);
         showToast('Error deleting family', 'error');
@@ -440,7 +538,7 @@ async function restoreFamily(familyData) {
             localStorage.setItem('familiesData', JSON.stringify(AppState.families));
         }
 
-        showToast('Family record restored!', 'success');
+        showToast('✅ Family record restored!', 'success');
         await loadFamilies();
     } catch (error) {
         console.error('Error restoring family:', error);
@@ -448,40 +546,47 @@ async function restoreFamily(familyData) {
     }
 }
 
-// Show toast with Undo button
+// Show toast with Undo button (FIXED)
 function showUndoToast(message, undoCallback) {
-    console.log('Showing undo toast:', message);
     const toast = document.createElement('div');
     toast.className = 'toast info';
-    toast.style.display = 'flex';
-    toast.style.alignItems = 'center';
-    toast.style.justifyContent = 'space-between';
-    toast.style.minWidth = '300px';
-    toast.style.zIndex = '9999';
+    toast.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 350px;
+        z-index: 9999;
+        padding: 1rem 1.5rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--info-color);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+    `;
 
     toast.innerHTML = `
-        <span>${message}</span>
+        <span style="color: var(--text-primary); font-weight: 500;">${message}</span>
         <button id="undoActionBtn" style="
-            background: rgba(255,255,255,0.2); 
+            background: var(--info-color); 
             border: none; 
             color: white; 
-            padding: 6px 16px; 
-            border-radius: 4px; 
+            padding: 0.5rem 1.25rem; 
+            border-radius: 6px; 
             cursor: pointer; 
-            margin-left: 12px;
-            font-weight: bold;
+            margin-left: 1rem;
+            font-weight: 700;
             font-size: 0.9rem;
-            border: 1px solid rgba(255,255,255,0.4);
-        ">UNDO</button>
+            transition: all 0.15s;
+        " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--info-color)'">
+            ↩️ UNDO
+        </button>
     `;
 
     document.body.appendChild(toast);
 
     const btn = toast.querySelector('#undoActionBtn');
-    let isUndone = false;
 
     btn.onclick = () => {
-        isUndone = true;
         undoCallback();
         toast.remove();
     };
@@ -490,7 +595,9 @@ function showUndoToast(message, undoCallback) {
     setTimeout(() => {
         if (toast.parentNode) {
             toast.style.animation = 'slideInRight 0.3s ease-out reverse';
-            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
         }
     }, 60000);
 }
@@ -521,11 +628,3 @@ document.addEventListener('click', (e) => {
         closeFamilyModal();
     }
 });
-
-// Confirm dialog
-function confirmAction(message) {
-    return new Promise((resolve) => {
-        const confirmed = confirm(message);
-        resolve(confirmed);
-    });
-}
