@@ -2,6 +2,9 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     setupSignupForm();
+    if (typeof setupPasswordToggles === 'function') {
+        setupPasswordToggles();
+    }
 });
 
 // Setup signup form handler

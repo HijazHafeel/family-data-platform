@@ -9,7 +9,7 @@
 
     --secondary-color: #7c3aed;
     /* Violet 600 */
-    --accent-color: #2563eb;
+    --accent-color: #143885;
     /* Blue 600 */
 
     --success-color: #059669;
@@ -761,4 +761,51 @@ body {
 .badge.inactive {
     background: rgba(148, 163, 184, 0.2);
     color: var(--text-muted);
+}
+
+/* Error Message Styles */
+.error-message {
+    display: block;
+    color: var(--danger-color);
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+    min-height: 1.2rem;
+}
+
+.form-input.error {
+    border-color: var(--danger-color);
+    background-color: rgba(220, 38, 38, 0.05);
+}
+
+.form-input.success {
+    border-color: var(--success-color);
+}
+
+/* Dynamic Table Row Styles */
+.member-row input,
+.member-row select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    width: 100%;
+}
+
+.member-row input:focus,
+.member-row select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Special Category Entry Styles */
+.special-category-entry {
+    padding: 1.5rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+}
+
+.special-category-entry:hover {
+    border-color: var(--primary-light);
 }

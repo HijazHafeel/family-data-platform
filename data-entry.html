@@ -63,67 +63,202 @@
                 <h3 style="margin-bottom: 2rem; font-size: 1.25rem; font-weight: 700; color: var(--text-main);">
                     <i data-lucide="user-plus"
                         style="width: 20px; height: 20px; vertical-align: text-bottom; margin-right: 8px; color: var(--primary-color);"></i>
-                    Add New Family
+                    Family Data Collection Form
                 </h3>
 
                 <form id="addFamilyForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="familyName">Family Name / Head of Household *</label>
-                            <input type="text" id="familyName" class="form-input" required>
-                        </div>
+                    <!-- SECTION 1: CHIEF OCCUPANT DETAILS -->
+                    <div style="margin-bottom: 3rem;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="user"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            Section 1: Family Information
+                        </h4>
 
                         <div class="form-group">
-                            <label for="contactNumber">Contact Number *</label>
-                            <input type="tel" id="contactNumber" class="form-input" placeholder="0771234567" required>
+                            <label for="address">Address *</label>
+                            <textarea id="address" class="form-input" rows="2" required></textarea>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="location">Location *</label>
+                                <input type="text" id="location" class="form-input" required
+                                    placeholder="Area/District">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="familyName">Family Name *</label>
+                                <input type="text" id="familyName" class="form-input" required pattern="[A-Za-z\s]+"
+                                    title="Text only">
+                                <small class="error-message" id="familyNameError"></small>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="phoneNumber">Phone Number *</label>
+                                <input type="tel" id="phoneNumber" class="form-input" required pattern="[0-9]{8,15}"
+                                    title="8-15 digits">
+                                <small class="error-message" id="phoneNumberError"></small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address *</label>
+                                <input type="email" id="email" class="form-input" required>
+                                <small class="error-message" id="emailError"></small>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Eligible for Zakath *</label>
+                                <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="eligibleZakath" value="Yes" required
+                                            style="margin-right: 0.5rem;">
+                                        Yes
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="eligibleZakath" value="No" required
+                                            style="margin-right: 0.5rem;">
+                                        No
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>House Ownership *</label>
+                                <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="houseOwnership" value="Rented" required
+                                            style="margin-right: 0.5rem;">
+                                        Rented
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="houseOwnership" value="Own" required
+                                            style="margin-right: 0.5rem;">
+                                        Own
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="houseOwnership" value="Leased" required
+                                            style="margin-right: 0.5rem;">
+                                        Leased
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="numFamilyMembers">No. of Family Members *</label>
+                                <input type="number" id="numFamilyMembers" class="form-input" min="0" max="50" value="0"
+                                    required>
+                                <small style="color: var(--text-light); font-size: 0.875rem;">This will generate member
+                                    entry rows below</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="nicNumber">NIC Number *</label>
+                                <input type="text" id="nicNumber" class="form-input" required
+                                    pattern="[0-9]{9}[vVxX]|[0-9]{12}" title="9 digits + V/X or 12 digits">
+                                <small class="error-message" id="nicNumberError"></small>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" class="form-input" placeholder="family@example.com">
-                    </div>
+                    <!-- SECTION 2: HOUSEHOLD MEMBERS -->
+                    <div style="margin-bottom: 3rem;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="users"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            Section 2: Details of Household Members
+                        </h4>
 
-                    <div class="form-group">
-                        <label for="address">Full Address *</label>
-                        <textarea id="address" class="form-input" rows="2" required></textarea>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="area">Area</label>
-                            <input type="text" id="area" class="form-input">
+                        <div style="overflow-x: auto; margin-bottom: 1rem;">
+                            <table class="data-table" id="membersTable" style="min-width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Name in Full *</th>
+                                        <th>NIC Number</th>
+                                        <th>Relationship *</th>
+                                        <th>Date of Birth</th>
+                                        <th>Gender</th>
+                                        <th>Occupation</th>
+                                        <th>Contact Number</th>
+                                        <th>School/Workplace</th>
+                                        <th>Civil Status</th>
+                                        <th>Qualification</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="membersTableBody">
+                                    <!-- Dynamic rows will be added here -->
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div class="form-group">
-                            <label for="city">City</label>
-                            <input type="text" id="city" class="form-input">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addMemberRow()" id="addMemberBtn">
+                            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                            Add Member
+                        </button>
+                        <span id="memberCountInfo"
+                            style="margin-left: 1rem; color: var(--text-light); font-size: 0.875rem;"></span>
+                    </div>
+
+                    <!-- SECTION 3: SPECIAL CATEGORIES -->
+                    <div style="margin-bottom: 3rem;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="star"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            Section 3: Special Categories
+                        </h4>
+
+                        <div id="specialCategoriesContainer">
+                            <!-- Dynamic special category entries will be added here -->
                         </div>
 
+                        <button type="button" class="btn btn-success btn-sm" onclick="addSpecialCategory()"
+                            id="addSpecialCategoryBtn">
+                            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                            Add Special Category
+                        </button>
+                        <span id="specialCategoryCountInfo"
+                            style="margin-left: 1rem; color: var(--text-light); font-size: 0.875rem;"></span>
+                    </div>
+
+                    <!-- FILE UPLOAD SECTION (Master Admin Only) -->
+                    <div id="fileUploadSection" style="margin-bottom: 3rem; display: none;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="paperclip"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            File Attachments (Master Admin Only)
+                        </h4>
+
                         <div class="form-group">
-                            <label for="postalCode">Postal Code</label>
-                            <input type="text" id="postalCode" class="form-input">
+                            <label for="fileUpload">Upload Files (Images, PDF, Excel)</label>
+                            <input type="file" id="fileUpload" class="form-input"
+                                accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls" multiple>
+                            <small style="color: var(--text-light); font-size: 0.875rem;">Max 10MB per file</small>
+                        </div>
+
+                        <div id="uploadedFilesList" style="margin-top: 1rem;">
+                            <!-- Uploaded files will be listed here -->
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="numberOfMembers">Number of Members *</label>
-                            <input type="number" id="numberOfMembers" class="form-input" min="1" value="1" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 2rem;">
-                        <label for="notes">Notes / Comments</label>
-                        <textarea id="notes" class="form-input" rows="2"></textarea>
-                    </div>
-
-                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <!-- FORM ACTIONS -->
+                    <div
+                        style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 2rem; border-top: 1px solid var(--border-main);">
                         <button type="button" class="btn btn-secondary" onclick="resetForm()">
                             <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
                             Clear Form
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
                             <i data-lucide="save" style="width: 18px; height: 18px;"></i>
                             Save Family Data
                         </button>
@@ -165,6 +300,7 @@
     <!-- Application Scripts -->
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
+    <script src="local-storage-manager.js"></script>
     <script src="data-entry.js"></script>
     <script>
         lucide.createIcons();

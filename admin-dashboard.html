@@ -109,8 +109,7 @@
                                 <i data-lucide="download" style="width: 14px; height: 14px;"></i>
                                 Export Data
                             </button>
-                            <button class="btn btn-secondary btn-sm"
-                                onclick="window.location.href='backup-utility.html'">
+                            <button class="btn btn-secondary btn-sm" onclick="backupData()">
                                 <i data-lucide="database" style="width: 14px; height: 14px;"></i>
                                 Backup
                             </button>
@@ -180,6 +179,41 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Security & Device Management -->
+                <div id="deviceManagementSection" class="table-container"
+                    style="margin-top: 2rem; padding: 2rem; background: var(--bg-subtle); display: none;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                        <h3 style="margin: 0;">
+                            <i data-lucide="shield"
+                                style="width: 20px; height: 20px; vertical-align: text-bottom; margin-right: 8px; color: var(--primary-color);"></i>
+                            Security & Device Management
+                        </h3>
+                    </div>
+
+                    <div class="glass-container" style="padding: 1.5rem; background: var(--bg-main);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="margin: 0 0 0.5rem 0;">Master Device Authorization</h4>
+                                <p style="margin: 0; font-size: 0.875rem; color: var(--text-light);">
+                                    Authorization status: <span id="deviceStatus" class="badge">Checking...</span>
+                                </p>
+                            </div>
+                            <button id="masterDeviceBtn" class="btn btn-primary" onclick="handleMasterDeviceSetup()">
+                                <i data-lucide="key" style="width: 16px; height: 16px;"></i>
+                                Authorize This Device
+                            </button>
+                        </div>
+                        <div id="masterDeviceExplanation"
+                            style="margin-top: 1rem; padding: 1rem; background: var(--primary-light); border-radius: 8px; font-size: 0.875rem; color: var(--primary-dark); display: none;">
+                            <strong>What is a Master Device?</strong><br>
+                            A Master Device is a trusted physical computer authorized to handle sensitive file
+                            operations (like member photos and document scans).
+                            Only the Master Admin using an authorized Master Device can view and upload these files.
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -197,23 +231,6 @@
                 <form id="familyForm">
                     <input type="hidden" id="familyId">
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="familyName">Family Name / Head of Household *</label>
-                            <input type="text" id="familyName" class="form-input" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="contactNumber">Contact Number *</label>
-                            <input type="tel" id="contactNumber" class="form-input" placeholder="0771234567" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" class="form-input" placeholder="family@example.com">
-                    </div>
-
                     <div class="form-group">
                         <label for="address">Full Address *</label>
                         <textarea id="address" class="form-input" rows="2" required></textarea>
@@ -221,27 +238,81 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="area">Area</label>
-                            <input type="text" id="area" class="form-input">
+                            <label for="location">Location *</label>
+                            <input type="text" id="location" class="form-input" required placeholder="Area/District">
                         </div>
 
                         <div class="form-group">
-                            <label for="city">City</label>
-                            <input type="text" id="city" class="form-input">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="postalCode">Postal Code</label>
-                            <input type="text" id="postalCode" class="form-input">
+                            <label for="familyName">Family Name *</label>
+                            <input type="text" id="familyName" class="form-input" required>
                         </div>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="numberOfMembers">Number of Members *</label>
-                            <input type="number" id="numberOfMembers" class="form-input" min="1" value="1" required>
+                            <label for="phoneNumber">Phone Number *</label>
+                            <input type="tel" id="phoneNumber" class="form-input" placeholder="0771234567" required>
                         </div>
 
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" class="form-input" placeholder="family@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Eligible for Zakath *</label>
+                            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="radio" name="eligibleZakath" value="Yes" required
+                                        style="margin-right: 0.5rem;">
+                                    Yes
+                                </label>
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="radio" name="eligibleZakath" value="No" required
+                                        style="margin-right: 0.5rem;">
+                                    No
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>House Ownership *</label>
+                            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="radio" name="houseOwnership" value="Rented" required
+                                        style="margin-right: 0.5rem;">
+                                    Rented
+                                </label>
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="radio" name="houseOwnership" value="Own" required
+                                        style="margin-right: 0.5rem;">
+                                    Own
+                                </label>
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="radio" name="houseOwnership" value="Leased" required
+                                        style="margin-right: 0.5rem;">
+                                    Leased
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numFamilyMembers">No. of Family Members *</label>
+                            <input type="number" id="numFamilyMembers" class="form-input" min="0" value="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nicNumber">NIC Number *</label>
+                            <input type="text" id="nicNumber" class="form-input" required
+                                pattern="[0-9]{9}[vVxX]|[0-9]{12}" title="9 digits + V/X or 12 digits">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
                         <div class="form-group">
                             <label for="status">Status</label>
                             <select id="status" class="form-input">
@@ -249,6 +320,58 @@
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- SECTION 2: HOUSEHOLD MEMBERS -->
+                    <div style="margin-top: 2rem; margin-bottom: 2rem;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="users"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            Section 2: Household Members
+                        </h4>
+
+                        <div style="overflow-x: auto; margin-bottom: 1rem;">
+                            <table class="data-table" id="membersTable" style="min-width: 1000px;">
+                                <thead>
+                                    <tr>
+                                        <th>Name in Full *</th>
+                                        <th>NIC Number</th>
+                                        <th>Relationship *</th>
+                                        <th>Date of Birth</th>
+                                        <th>Gender</th>
+                                        <th>Occupation</th>
+                                        <th>Contact</th>
+                                        <th>Workplace</th>
+                                        <th>Civil Status</th>
+                                        <th>Qualification</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="membersTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: SPECIAL CATEGORIES -->
+                    <div style="margin-bottom: 2rem;">
+                        <h4
+                            style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light);">
+                            <i data-lucide="star"
+                                style="width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 6px;"></i>
+                            Section 3: Special Categories
+                        </h4>
+
+                        <div id="specialCategoriesContainer">
+                            <!-- Dynamic entries -->
+                        </div>
+
+                        <button type="button" class="btn btn-success btn-sm" onclick="addSpecialCategory()">
+                            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                            Add Special Category
+                        </button>
                     </div>
 
                     <div class="form-group">
@@ -276,6 +399,7 @@
     <!-- Application Scripts -->
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
+    <script src="local-storage-manager.js"></script>
     <script src="admin-dashboard.js"></script>
     <script>
         // Initialize Lucide icons

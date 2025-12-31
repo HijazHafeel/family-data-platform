@@ -26,6 +26,52 @@ function setupEventListeners() {
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
+
+    // Add password visibility toggle
+    setupPasswordToggles();
+}
+
+// Setup password visibility toggles
+function setupPasswordToggles() {
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    passwordInputs.forEach(input => {
+        const wrapper = input.parentElement;
+        if (!wrapper.querySelector('.password-toggle')) {
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'password-toggle';
+            toggle.innerHTML = '<i data-lucide="eye"></i>';
+            toggle.setAttribute('aria-label', 'Toggle password visibility');
+            toggle.style.cssText = `
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(calc(-50% - 10px));
+                background: none;
+                border: none;
+                color: var(--text-light);
+                cursor: pointer;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                z-index: 10;
+            `;
+
+            wrapper.style.position = 'relative';
+            wrapper.appendChild(toggle);
+
+            toggle.addEventListener('click', () => {
+                const type = input.type === 'password' ? 'text' : 'password';
+                input.type = type;
+                toggle.innerHTML = type === 'password'
+                    ? '<i data-lucide="eye"></i>'
+                    : '<i data-lucide="eye-off"></i>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    });
 }
 
 // Hash password using SHA-256
@@ -45,13 +91,15 @@ async function handleLogin(e) {
     const password = document.getElementById('password').value;
 
     if (!username || !password) {
-        showToast('Please enter both email and password', 'error');
+        showToast('Please enter both email/username and password', 'error');
         return;
     }
 
     const loginBtn = document.querySelector('.btn-primary');
+    const originalText = loginBtn.innerHTML;
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging in...';
+    loginBtn.innerHTML = '<i data-lucide="loader-2" style="width: 18px; height: 18px; animation: spin 1s linear infinite;"></i> Logging in...';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     try {
         let user = null;
@@ -66,45 +114,51 @@ async function handleLogin(e) {
                 // Fallback: If username is provided, look up email in Firestore
                 if (!isEmail) {
                     const profile = await FirebaseDB.getUserByUsername(username);
-                    if (profile) {
+                    if (profile && profile.email) {
                         loginEmail = profile.email;
                     }
                 }
 
                 if (loginEmail && loginEmail.includes('@')) {
-                    // Official Firebase Authentication
-                    const userCredential = await auth.signInWithEmailAndPassword(loginEmail, password);
+                    try {
+                        // Official Firebase Authentication
+                        const userCredential = await auth.signInWithEmailAndPassword(loginEmail, password);
 
-                    // Fetch full profile from Firestore
-                    const allUsers = await FirebaseDB.getAllUsers();
-                    user = allUsers.find(u => u.email === loginEmail);
+                        // Fetch full profile from Firestore
+                        const allUsers = await FirebaseDB.getAllUsers();
+                        user = allUsers.find(u => u.email === loginEmail);
 
-                    if (user) {
-                        if (user.status === 'pending') {
-                            showToast('Account pending admin approval', 'warning');
-                            loginBtn.disabled = false;
-                            loginBtn.textContent = 'Login';
+                        if (user) {
+                            if (user.status === 'pending') {
+                                await auth.signOut();
+                                showToast('Account pending admin approval', 'warning');
+                                loginBtn.disabled = false;
+                                loginBtn.innerHTML = originalText;
+                                if (typeof lucide !== 'undefined') lucide.createIcons();
+                                return;
+                            }
+                            if (user.status === 'disabled') {
+                                await auth.signOut();
+                                showToast('Account has been disabled. Contact admin.', 'error');
+                                loginBtn.disabled = false;
+                                loginBtn.innerHTML = originalText;
+                                if (typeof lucide !== 'undefined') lucide.createIcons();
+                                return;
+                            }
+                            loginSuccess(user);
                             return;
                         }
-                        if (user.status === 'disabled') {
-                            showToast('Account has been disabled. Contact admin.', 'error');
-                            loginBtn.disabled = false;
-                            loginBtn.textContent = 'Login';
-                            return;
+                    } catch (authError) {
+                        console.warn('Firebase Auth failed:', authError.message);
+                        if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
+                            // Don't return yet, try legacy fallback
+                        } else {
+                            throw authError;
                         }
-                        loginSuccess(user);
-                        return;
                     }
                 }
-            } catch (authError) {
-                console.warn('Firebase Auth failed:', authError.message);
-                // If it's a standard auth error, show specific message and stop
-                if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
-                    showToast('Invalid email or password', 'error');
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Login';
-                    return;
-                }
+            } catch (error) {
+                console.warn('Firebase lookup error:', error);
             }
         }
 
@@ -128,26 +182,30 @@ async function handleLogin(e) {
             if (user.status === 'pending') {
                 showToast('Account pending admin approval', 'warning');
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
+                loginBtn.innerHTML = originalText;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
             if (user.status === 'disabled') {
                 showToast('Account has been disabled. Contact admin.', 'error');
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
+                loginBtn.innerHTML = originalText;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
             loginSuccess(user);
         } else {
             showToast('Invalid credentials. Please try again.', 'error');
             loginBtn.disabled = false;
-            loginBtn.textContent = 'Login';
+            loginBtn.innerHTML = originalText;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     } catch (error) {
         console.error('Login error:', error);
         showToast('Login failed: ' + error.message, 'error');
         loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
+        loginBtn.innerHTML = originalText;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 }
 
@@ -156,7 +214,8 @@ function loginSuccess(user) {
     AppState.currentUser = {
         username: user.username,
         role: user.role,
-        fullName: user.fullName || user.username
+        fullName: user.fullName || user.username,
+        email: user.email || ''
     };
 
     localStorage.setItem('userSession', JSON.stringify(AppState.currentUser));
@@ -202,23 +261,43 @@ async function getDefaultUsers() {
 
 // Logout function
 function logout() {
+    if (AppState.isFirebaseReady && auth) {
+        auth.signOut().catch(err => console.error('Sign out error:', err));
+    }
     localStorage.removeItem('userSession');
     AppState.currentUser = null;
     window.location.href = 'index.html';
 }
 
-// Show toast notification
+// Show toast notification (IMPROVED)
 function showToast(message, type = 'info') {
+    // Remove existing toasts
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+
+    const icons = {
+        success: 'check-circle',
+        error: 'x-circle',
+        warning: 'alert-triangle',
+        info: 'info'
+    };
+
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i data-lucide="${icons[type] || 'info'}" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
+            <span style="flex: 1;">${message}</span>
+        </div>
+    `;
 
     document.body.appendChild(toast);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     setTimeout(() => {
-        toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+        toast.style.animation = 'slideOutRight 0.3s ease-out';
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 4000);
 }
 
 // Validate family form data
@@ -252,8 +331,9 @@ function validateFamilyData(data) {
 
 // Sanitize input to prevent XSS
 function sanitizeInput(input) {
+    if (!input) return '';
     const div = document.createElement('div');
-    div.textContent = input;
+    div.textContent = String(input);
     return div.innerHTML;
 }
 
@@ -271,7 +351,7 @@ function formatDate(timestamp) {
 // Format phone number
 function formatPhoneNumber(phone) {
     if (!phone) return '';
-    const cleaned = phone.replace(/\D/g, '');
+    const cleaned = String(phone).replace(/\D/g, '');
     if (cleaned.length === 10) {
         return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
     }
@@ -326,6 +406,19 @@ function confirmAction(message) {
         const confirmed = confirm(message);
         resolve(confirmed);
     });
+}
+
+// Add loading spinner
+function showLoadingSpinner(container) {
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.id = 'loadingSpinner';
+    container.appendChild(spinner);
+}
+
+function hideLoadingSpinner() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.remove();
 }
 
 // Firebase is automatically initialized in firebase-config.js if SDK is present

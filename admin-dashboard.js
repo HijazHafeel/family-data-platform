@@ -1,11 +1,284 @@
 // Admin Dashboard Logic
 let currentEditingId = null;
 
+// Member and Special Category tracking
+let memberRowCount = 0;
+let specialCategoryCount = 0;
+let undoTimers = {};
+
 // Check authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminAuth();
     initializeDashboard();
+    setupDynamicMemberRows();
+    updateDeviceStatusUI();
 });
+
+// Dynamic Member Rows Logic (from data-entry.js)
+function setupDynamicMemberRows() {
+    const numMembersInput = document.getElementById('numFamilyMembers');
+    if (numMembersInput) {
+        numMembersInput.addEventListener('change', () => {
+            const count = parseInt(numMembersInput.value) || 0;
+            const currentRows = document.querySelectorAll('#membersTableBody .member-row').length;
+
+            if (count > currentRows) {
+                // Add rows
+                for (let i = currentRows; i < count; i++) {
+                    addMemberRow();
+                }
+            } else if (count < currentRows) {
+                // Remove rows from bottom
+                const tbody = document.getElementById('membersTableBody');
+                for (let i = currentRows; i > count; i--) {
+                    if (tbody.lastElementChild) {
+                        tbody.removeChild(tbody.lastElementChild);
+                        memberRowCount--;
+                    }
+                }
+            }
+        });
+    }
+}
+
+function addMemberRow() {
+    memberRowCount++;
+    const tbody = document.getElementById('membersTableBody');
+    const row = document.createElement('tr');
+    row.className = 'member-row';
+    row.id = `member-${memberRowCount}`;
+
+    row.innerHTML = `
+        <td><input type="text" name="memberName[]" required placeholder="Full Name"></td>
+        <td><input type="text" name="memberNIC[]" pattern="[0-9]{9}[vVxX]|[0-9]{12}" placeholder="NIC Number"></td>
+        <td><input type="text" name="memberRelationship[]" required placeholder="Relationship"></td>
+        <td><input type="date" name="memberDOB[]"></td>
+        <td>
+            <select name="memberGender[]">
+                <option value="">-</option>
+                <option value="M">M</option>
+                <option value="F">F</option>
+            </select>
+        </td>
+        <td><input type="text" name="memberOccupation[]" placeholder="Occupation"></td>
+        <td><input type="tel" name="memberContact[]" placeholder="Contact"></td>
+        <td><input type="text" name="memberWorkplace[]" placeholder="Workplace"></td>
+        <td>
+            <select name="memberCivilStatus[]">
+                <option value="">-</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+            </select>
+        </td>
+        <td><input type="text" name="memberQualification[]" placeholder="Qualification"></td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeMemberRow('member-${memberRowCount}')">✕</button>
+        </td>
+    `;
+
+    tbody.appendChild(row);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function removeMemberRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+        // Update input count
+        const numMembersInput = document.getElementById('numFamilyMembers');
+        if (numMembersInput) {
+            numMembersInput.value = document.querySelectorAll('#membersTableBody .member-row').length;
+        }
+    }
+}
+
+// Special Category Logic
+function addSpecialCategory() {
+    specialCategoryCount++;
+    const container = document.getElementById('specialCategoriesContainer');
+    const entry = document.createElement('div');
+    entry.className = 'special-category-entry';
+    entry.id = `spec-${specialCategoryCount}`;
+    entry.style.cssText = 'background: var(--bg-subtle); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-main); margin-bottom: 1.5rem; position: relative;';
+
+    entry.innerHTML = `
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeSpecialCategory('spec-${specialCategoryCount}')" 
+            style="position: absolute; top: 1rem; right: 1rem; width: 28px; height: 28px; padding: 0;">✕</button>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Category *</label>
+                <select name="specCategory[]" required class="form-input">
+                    <option value="">Select Category</option>
+                    <option value="Disabled">Disabled</option>
+                    <option value="Chronic Illness">Chronic Illness</option>
+                    <option value="Widow">Widow</option>
+                    <option value="Orphan">Orphan</option>
+                    <option value="Elderly Alone">Elderly Alone</option>
+                    <option value="Loss of Income">Loss of Income</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Member Name</label>
+                <input type="text" name="specMemberName[]" class="form-input" placeholder="Name of affected member">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Details / Description</label>
+            <textarea name="specDescription[]" class="form-input" rows="2" placeholder="Describe the situation..."></textarea>
+        </div>
+    `;
+
+    container.appendChild(entry);
+}
+
+function removeSpecialCategory(id) {
+    const entry = document.getElementById(id);
+    if (entry) entry.remove();
+}
+
+// Data Collection functions
+function collectMembersData() {
+    const members = [];
+    const rows = document.querySelectorAll('#membersTableBody .member-row');
+
+    rows.forEach(row => {
+        members.push({
+            name: row.querySelector('[name="memberName[]"]').value.trim(),
+            nicNumber: row.querySelector('[name="memberNIC[]"]').value.trim(),
+            relationship: row.querySelector('[name="memberRelationship[]"]').value.trim(),
+            dateOfBirth: row.querySelector('[name="memberDOB[]"]').value,
+            gender: row.querySelector('[name="memberGender[]"]').value,
+            occupation: row.querySelector('[name="memberOccupation[]"]').value.trim(),
+            contactNumber: row.querySelector('[name="memberContact[]"]').value.trim(),
+            workplace: row.querySelector('[name="memberWorkplace[]"]').value.trim(),
+            civilStatus: row.querySelector('[name="memberCivilStatus[]"]').value,
+            qualification: row.querySelector('[name="memberQualification[]"]').value.trim()
+        });
+    });
+
+    return members;
+}
+
+function collectSpecialCategoriesData() {
+    const categories = [];
+    const entries = document.querySelectorAll('.special-category-entry');
+
+    entries.forEach(entry => {
+        const category = entry.querySelector('[name="specCategory[]"]').value;
+        if (category) {
+            categories.push({
+                category: category,
+                memberName: entry.querySelector('[name="specMemberName[]"]').value.trim(),
+                description: entry.querySelector('[name="specDescription[]"]').value.trim()
+            });
+        }
+    });
+
+    return categories;
+}
+
+// Device Authorization Functions
+function updateDeviceStatusUI() {
+    const statusBadge = document.getElementById('deviceStatus');
+    const authBtn = document.getElementById('masterDeviceBtn');
+    const explanation = document.getElementById('masterDeviceExplanation');
+    const securitySection = document.getElementById('deviceManagementSection');
+
+    // ONLY SHOW FOR USERNAME "admin"
+    if (securitySection) {
+        if (AppState.currentUser && AppState.currentUser.username === 'admin') {
+            securitySection.style.display = 'block';
+        } else {
+            securitySection.style.display = 'none';
+            return; // Exit if not admin
+        }
+    }
+
+    if (!statusBadge) return;
+
+    const isMaster = typeof isMasterDevice === 'function' ? isMasterDevice() : false;
+
+    if (isMaster) {
+        statusBadge.textContent = 'Authorized Master Device';
+        statusBadge.className = 'badge active';
+        authBtn.innerHTML = '<i data-lucide="check" style="width: 16px; height: 16px;"></i> Authorized';
+        authBtn.className = 'btn btn-success';
+        authBtn.disabled = true;
+        explanation.style.display = 'block';
+    } else {
+        statusBadge.textContent = 'Not Authorized';
+        statusBadge.className = 'badge inactive';
+        authBtn.innerHTML = '<i data-lucide="key" style="width: 16px; height: 16px;"></i> Authorize This Device';
+        authBtn.className = 'btn btn-primary';
+        authBtn.disabled = false;
+        explanation.style.display = 'block';
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function handleMasterDeviceSetup() {
+    if (typeof setMasterDevice === 'function') {
+        const success = setMasterDevice();
+        if (success) {
+            updateDeviceStatusUI();
+        }
+    } else {
+        console.error('setMasterDevice function not found. Is local-storage-manager.js loaded?');
+        showToast('System component missing. Please refresh.', 'error');
+    }
+}
+
+// Export Functionality
+function exportData() {
+    if (AppState.families.length === 0) {
+        showToast('No data to export', 'warning');
+        return;
+    }
+
+    const choice = confirm('Export as CSV? (Click OK for CSV, Cancel for JSON)');
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    if (choice) {
+        exportAsCSV(AppState.families, `families-export-${timestamp}.csv`);
+    } else {
+        exportAsJSON(AppState.families, `families-export-${timestamp}.json`);
+    }
+}
+
+// Backup Utility
+async function backupData() {
+    try {
+        const backup = {
+            timestamp: new Date().toISOString(),
+            families: AppState.families,
+            users: AppState.users,
+            metadata: {
+                version: '1.0',
+                exportedBy: AppState.currentUser?.username
+            }
+        };
+
+        const json = JSON.stringify(backup, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('Backup completed successfully', 'success');
+    } catch (error) {
+        console.error('Backup failed:', error);
+        showToast('Backup failed', 'error');
+    }
+}
 
 // Check if user is admin
 function checkAdminAuth() {
@@ -95,11 +368,11 @@ function renderFamilyTable(families) {
     tbody.innerHTML = families.map(family => `
         <tr>
             <td><strong>${sanitizeInput(family.id || 'N/A')}</strong></td>
-            <td>${sanitizeInput(family.familyName)}</td>
-            <td>${formatPhoneNumber(family.contactNumber)}</td>
-            <td>${sanitizeInput(family.email || 'N/A')}</td>
-            <td>${family.numberOfMembers || 0}</td>
-            <td>${sanitizeInput(family.address)}</td>
+            <td>${sanitizeInput(family.familyInfo?.familyName || family.familyName || 'N/A')}</td>
+            <td>${formatPhoneNumber(family.familyInfo?.phoneNumber || family.phoneNumber || family.contactNumber)}</td>
+            <td>${sanitizeInput(family.familyInfo?.email || family.email || 'N/A')}</td>
+            <td>${family.familyInfo?.numFamilyMembers || family.numFamilyMembers || family.numberOfMembers || 0}</td>
+            <td>${sanitizeInput(family.familyInfo?.address || family.address || 'N/A')}</td>
             <td>
                 <span class="badge ${family.status === 'active' ? 'active' : 'inactive'}">
                     ${family.status || 'active'}
@@ -109,10 +382,10 @@ function renderFamilyTable(families) {
             <td>
                 <div class="table-actions-cell">
                     <button class="btn btn-secondary btn-sm" onclick="editFamily('${family.id}')">
-                        ✏️
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="edit-2" style="width: 14px; height: 14px;" class="lucide lucide-edit-2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="confirmDeleteFamily('${family.id}')">
-                        🗑️
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" style="width: 14px; height: 14px;" class="lucide lucide-trash-2"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                 </div>
             </td>
@@ -124,7 +397,7 @@ function renderFamilyTable(families) {
 async function updateStatistics() {
     const totalFamilies = AppState.families.length;
     const activeRecords = AppState.families.filter(f => f.status === 'active').length;
-    const totalMembers = AppState.families.reduce((sum, f) => sum + (parseInt(f.numberOfMembers) || 0), 0);
+    const totalMembers = AppState.families.reduce((sum, f) => sum + (parseInt(f.familyInfo?.numFamilyMembers || f.numFamilyMembers || f.numberOfMembers) || 0), 0);
 
     // Fetch users for count if not already loaded
     if (AppState.users.length === 0 && AppState.isFirebaseReady) {
@@ -203,24 +476,24 @@ function renderUserTable(users) {
                 <div class="table-actions-cell">
                     ${isPending ? `
                         <button class="btn btn-success btn-sm" onclick="approveUser('${user.id}', '${user.username}')" title="Approve Admin">
-                            ✅ Approve
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" style="width: 14px; height: 14px;" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg> Approve
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.id}', '${user.username}')" title="Reject">
-                            ❌ Reject
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" style="width: 14px; height: 14px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg> Reject
                         </button>
                     ` : isActive && !isCurrentUser ? `
                         <button class="btn btn-warning btn-sm" onclick="toggleUserStatus('${user.id}', '${user.username}', 'disabled')" title="Disable Access">
-                            🚫 Disable
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user-x" style="width: 14px; height: 14px;" class="lucide lucide-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg> Disable
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${user.id}', '${user.username}')" title="Delete User">
-                            🗑️ Delete
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" style="width: 14px; height: 14px;" class="lucide lucide-trash-2"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Delete
                         </button>
                     ` : isDisabled && !isCurrentUser ? `
                         <button class="btn btn-success btn-sm" onclick="toggleUserStatus('${user.id}', '${user.username}', 'active')" title="Enable Access">
-                            ✅ Enable
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user-check" style="width: 14px; height: 14px;" class="lucide lucide-user-check"><path d="m16 11 2 2 4-4"></path><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg> Enable
                         </button>
                         <button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${user.id}', '${user.username}')" title="Delete User">
-                            🗑️ Delete
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" style="width: 14px; height: 14px;" class="lucide lucide-trash-2"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Delete
                         </button>
                     ` : isCurrentUser ? `
                         <span style="color: var(--text-muted); font-size: 0.875rem;">Current User</span>
@@ -335,31 +608,66 @@ async function rejectUser(userId, username) {
     }
 }
 
-// Delete user permanently
+// Delete user with UNDO option
 async function deleteUserConfirm(userId, username) {
-    if (!confirm(`⚠️ PERMANENTLY DELETE user @${username}?\n\nThis will:\n- Remove all their data\n- Cannot be undone\n- Remove their login access forever\n\nAre you sure?`)) {
+    const userToDelete = AppState.users.find(u => u.id === userId || u.username === username);
+    if (!userToDelete) return;
+
+    if (!confirm(`⚠️ Are you sure you want to delete user @${username}?\n\nThis will remove their access to the system.`)) {
         return;
     }
 
-    // Double confirmation for safety
-    if (!confirm(`Final confirmation: Delete @${username}?\n\nClick OK to permanently delete, or Cancel to keep the user.`)) {
-        return;
+    // Clear any existing undo timer for this user
+    if (undoTimers[userId]) {
+        clearTimeout(undoTimers[userId]);
+        delete undoTimers[userId];
     }
 
     try {
+        // Optimistic UI update or actual delete
         if (AppState.isFirebaseReady && FirebaseDB) {
             await FirebaseDB.deleteUser(userId);
         } else {
-            let users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
-            users = users.filter(u => u.id !== userId && u.username !== username);
-            localStorage.setItem('platformUsers', JSON.stringify(users));
+            AppState.users = AppState.users.filter(u => u.id !== userId && u.username !== username);
+            localStorage.setItem('platformUsers', JSON.stringify(AppState.users));
         }
 
-        showToast(`🗑️ User @${username} permanently deleted`, 'success');
         await loadUsers();
+
+        // Show undo toast
+        showUndoToast(
+            `User @${username} deleted`,
+            () => restoreUser(userToDelete),
+            userId
+        );
     } catch (error) {
         console.error('Error deleting user:', error);
         showToast('Error deleting user', 'error');
+    }
+}
+
+// Restore user (Undo action)
+async function restoreUser(userData) {
+    try {
+        const userId = userData.id || userData.uid;
+        // Clear the undo timer
+        if (undoTimers[userId]) {
+            clearTimeout(undoTimers[userId]);
+            delete undoTimers[userId];
+        }
+
+        if (AppState.isFirebaseReady && FirebaseDB) {
+            await FirebaseDB.addUser(userData);
+        } else {
+            AppState.users.push(userData);
+            localStorage.setItem('platformUsers', JSON.stringify(AppState.users));
+        }
+
+        showToast(`✅ User @${userData.username} restored!`, 'success');
+        await loadUsers();
+    } catch (error) {
+        console.error('Error restoring user:', error);
+        showToast('Failed to restore user', 'error');
     }
 }
 
@@ -373,12 +681,11 @@ function searchFamilies() {
     }
 
     const filtered = AppState.families.filter(family =>
-        family.familyName?.toLowerCase().includes(searchTerm) ||
-        family.contactNumber?.includes(searchTerm) ||
-        family.email?.toLowerCase().includes(searchTerm) ||
-        family.address?.toLowerCase().includes(searchTerm) ||
-        family.area?.toLowerCase().includes(searchTerm) ||
-        family.city?.toLowerCase().includes(searchTerm)
+        (family.familyInfo?.familyName || family.familyName)?.toLowerCase().includes(searchTerm) ||
+        (family.familyInfo?.phoneNumber || family.phoneNumber || family.contactNumber)?.includes(searchTerm) ||
+        (family.familyInfo?.email || family.email)?.toLowerCase().includes(searchTerm) ||
+        (family.familyInfo?.address || family.address)?.toLowerCase().includes(searchTerm) ||
+        (family.familyInfo?.location || family.location)?.toLowerCase().includes(searchTerm)
     );
 
     renderFamilyTable(filtered);
@@ -391,6 +698,13 @@ function openAddFamilyModal() {
     document.getElementById('familyForm').reset();
     document.getElementById('familyId').value = '';
     document.getElementById('status').value = 'active';
+
+    // Clear dynamic rows
+    document.getElementById('membersTableBody').innerHTML = '';
+    document.getElementById('specialCategoriesContainer').innerHTML = '';
+    memberRowCount = 0;
+    specialCategoryCount = 0;
+
     document.getElementById('familyModal').classList.add('active');
 }
 
@@ -405,16 +719,63 @@ function editFamily(familyId) {
     currentEditingId = familyId;
     document.getElementById('modalTitle').textContent = 'Edit Family';
     document.getElementById('familyId').value = family.id;
-    document.getElementById('familyName').value = family.familyName || '';
-    document.getElementById('contactNumber').value = family.contactNumber || '';
-    document.getElementById('email').value = family.email || '';
-    document.getElementById('address').value = family.address || '';
-    document.getElementById('area').value = family.area || '';
-    document.getElementById('city').value = family.city || '';
-    document.getElementById('postalCode').value = family.postalCode || '';
-    document.getElementById('numberOfMembers').value = family.numberOfMembers || 1;
+
+    // Support both old and new data structures
+    const familyInfo = family.familyInfo || family;
+
+    document.getElementById('address').value = familyInfo.address || '';
+    document.getElementById('location').value = familyInfo.location || '';
+    document.getElementById('familyName').value = familyInfo.familyName || '';
+    document.getElementById('phoneNumber').value = familyInfo.phoneNumber || family.contactNumber || '';
+    document.getElementById('email').value = familyInfo.email || '';
+
+    // Set radio buttons
+    if (familyInfo.eligibleZakath) {
+        const zakathRadio = document.querySelector(`input[name="eligibleZakath"][value="${familyInfo.eligibleZakath}"]`);
+        if (zakathRadio) zakathRadio.checked = true;
+    }
+    if (familyInfo.houseOwnership) {
+        const ownershipRadio = document.querySelector(`input[name="houseOwnership"][value="${familyInfo.houseOwnership}"]`);
+        if (ownershipRadio) ownershipRadio.checked = true;
+    }
+
+    document.getElementById('numFamilyMembers').value = familyInfo.numFamilyMembers || family.numberOfMembers || 0;
+    document.getElementById('nicNumber').value = familyInfo.nicNumber || '';
     document.getElementById('status').value = family.status || 'active';
     document.getElementById('notes').value = family.notes || '';
+
+    // Load Household Members
+    const tbody = document.getElementById('membersTableBody');
+    tbody.innerHTML = '';
+    memberRowCount = 0;
+    const members = family.householdMembers || [];
+    members.forEach(member => {
+        addMemberRow();
+        const row = tbody.lastElementChild;
+        row.querySelector('[name="memberName[]"]').value = member.name || '';
+        row.querySelector('[name="memberNIC[]"]').value = member.nicNumber || '';
+        row.querySelector('[name="memberRelationship[]"]').value = member.relationship || '';
+        row.querySelector('[name="memberDOB[]"]').value = member.dateOfBirth || '';
+        row.querySelector('[name="memberGender[]"]').value = member.gender || '';
+        row.querySelector('[name="memberOccupation[]"]').value = member.occupation || '';
+        row.querySelector('[name="memberContact[]"]').value = member.contactNumber || '';
+        row.querySelector('[name="memberWorkplace[]"]').value = member.workplace || '';
+        row.querySelector('[name="memberCivilStatus[]"]').value = member.civilStatus || '';
+        row.querySelector('[name="memberQualification[]"]').value = member.qualification || '';
+    });
+
+    // Load Special Categories
+    const specContainer = document.getElementById('specialCategoriesContainer');
+    specContainer.innerHTML = '';
+    specialCategoryCount = 0;
+    const categories = family.specialCategories || [];
+    categories.forEach(cat => {
+        addSpecialCategory();
+        const entry = specContainer.lastElementChild;
+        entry.querySelector('[name="specCategory[]"]').value = cat.category || '';
+        entry.querySelector('[name="specMemberName[]"]').value = cat.memberName || '';
+        entry.querySelector('[name="specDescription[]"]').value = cat.description || '';
+    });
 
     document.getElementById('familyModal').classList.add('active');
 }
@@ -428,23 +789,28 @@ function closeFamilyModal() {
 // Save family data
 async function saveFamilyData() {
     const familyData = {
-        familyName: document.getElementById('familyName').value.trim(),
-        contactNumber: document.getElementById('contactNumber').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        address: document.getElementById('address').value.trim(),
-        area: document.getElementById('area').value.trim(),
-        city: document.getElementById('city').value.trim(),
-        postalCode: document.getElementById('postalCode').value.trim(),
-        numberOfMembers: parseInt(document.getElementById('numberOfMembers').value) || 1,
+        familyInfo: {
+            address: document.getElementById('address').value.trim(),
+            location: document.getElementById('location').value.trim(),
+            familyName: document.getElementById('familyName').value.trim(),
+            phoneNumber: document.getElementById('phoneNumber').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            eligibleZakath: document.querySelector('input[name="eligibleZakath"]:checked')?.value,
+            houseOwnership: document.querySelector('input[name="houseOwnership"]:checked')?.value,
+            numFamilyMembers: parseInt(document.getElementById('numFamilyMembers').value) || 0,
+            nicNumber: document.getElementById('nicNumber').value.trim()
+        },
+        householdMembers: collectMembersData(),
+        specialCategories: collectSpecialCategoriesData(),
         status: document.getElementById('status').value,
         notes: document.getElementById('notes').value.trim(),
-        lastModifiedBy: AppState.currentUser.username
+        lastModifiedBy: AppState.currentUser.username,
+        totalMembers: parseInt(document.getElementById('numFamilyMembers').value) || 0
     };
 
-    // Validate data
-    const errors = validateFamilyData(familyData);
-    if (errors.length > 0) {
-        showToast(errors[0], 'error');
+    // Simple validation for Section 1
+    if (!familyData.familyInfo.familyName || !familyData.familyInfo.address || !familyData.familyInfo.phoneNumber) {
+        showToast('Please fill all required fields in Section 1', 'error');
         return;
     }
 
@@ -488,26 +854,74 @@ async function saveFamilyData() {
     }
 }
 
-// Confirm delete family (NEW - Fixed delete function)
+// --- DELETE & UNDO LOGIC ---
+
+// Show toast with Undo button
+function showUndoToast(message, undoCallback, id) {
+    // Remove existing undo toasts
+    document.querySelectorAll('.toast.undo-toast').forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'toast info undo-toast';
+    toast.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-width: 350px;
+        z-index: 9999;
+    `;
+
+    toast.innerHTML = `
+        <span style="flex: 1;">${message}</span>
+        <button id="undoActionBtn" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+            <i data-lucide="undo-2" style="width: 14px; height: 14px;"></i> UNDO
+        </button>
+    `;
+
+    document.body.appendChild(toast);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    const undoBtn = toast.querySelector('#undoActionBtn');
+    undoBtn.onclick = () => {
+        undoCallback();
+        toast.remove();
+    };
+
+    // Auto-remove after 60 seconds
+    undoTimers[id] = setTimeout(() => {
+        if (toast.parentNode) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
+        }
+        delete undoTimers[id];
+    }, 60000);
+}
+
+// Confirm delete family
 async function confirmDeleteFamily(familyId) {
     const familyToDelete = AppState.families.find(f => f.id === familyId);
-    if (!familyToDelete) {
-        showToast('Family not found', 'error');
-        return;
-    }
+    if (!familyToDelete) return;
 
-    // Show confirmation dialog
-    if (!confirm(`⚠️ Delete family record for "${familyToDelete.familyName}"?\n\nYou will have 60 seconds to undo this action.`)) {
+    if (!confirm(`⚠️ Delete family record for "${familyToDelete.familyInfo?.familyName || familyToDelete.familyName}"?\n\nYou will have 60 seconds to undo this action.`)) {
         return;
     }
 
     await deleteFamily(familyId);
 }
 
-// Delete family with Undo (FIXED)
+// Delete family with Undo
 async function deleteFamily(familyId) {
     const familyToDelete = AppState.families.find(f => f.id === familyId);
     if (!familyToDelete) return;
+
+    // Clear any existing undo timer
+    if (undoTimers[familyId]) {
+        clearTimeout(undoTimers[familyId]);
+        delete undoTimers[familyId];
+    }
 
     try {
         if (AppState.isFirebaseReady && FirebaseDB) {
@@ -517,20 +931,27 @@ async function deleteFamily(familyId) {
             localStorage.setItem('familiesData', JSON.stringify(AppState.families));
         }
 
-        // Reload the table to show changes
         await loadFamilies();
 
-        // Show Undo option
-        showUndoToast('Family record deleted', () => restoreFamily(familyToDelete));
+        showUndoToast(
+            `Family "${familyToDelete.familyInfo?.familyName || familyToDelete.familyName}" deleted`,
+            () => restoreFamily(familyToDelete),
+            familyId
+        );
     } catch (error) {
         console.error('Error deleting family:', error);
         showToast('Error deleting family', 'error');
     }
 }
 
-// Restore family (Undo delete)
+// Restore family
 async function restoreFamily(familyData) {
     try {
+        if (undoTimers[familyData.id]) {
+            clearTimeout(undoTimers[familyData.id]);
+            delete undoTimers[familyData.id];
+        }
+
         if (AppState.isFirebaseReady && FirebaseDB) {
             await FirebaseDB.restoreFamily(familyData.id, familyData);
         } else {
@@ -546,79 +967,35 @@ async function restoreFamily(familyData) {
     }
 }
 
-// Show toast with Undo button (FIXED)
-function showUndoToast(message, undoCallback) {
-    const toast = document.createElement('div');
-    toast.className = 'toast info';
-    toast.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-width: 350px;
-        z-index: 9999;
-        padding: 1rem 1.5rem;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-left: 4px solid var(--info-color);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-lg);
-    `;
+// Backup Utility
+async function backupData() {
+    try {
+        const backupData = {
+            timestamp: new Date().toISOString(),
+            families: AppState.families,
+            users: AppState.users,
+            metadata: {
+                version: '1.0',
+                exportedBy: AppState.currentUser?.username
+            }
+        };
 
-    toast.innerHTML = `
-        <span style="color: var(--text-primary); font-weight: 500;">${message}</span>
-        <button id="undoActionBtn" style="
-            background: var(--info-color); 
-            border: none; 
-            color: white; 
-            padding: 0.5rem 1.25rem; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            margin-left: 1rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: all 0.15s;
-        " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='var(--info-color)'">
-            ↩️ UNDO
-        </button>
-    `;
+        const json = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `platform-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-    document.body.appendChild(toast);
-
-    const btn = toast.querySelector('#undoActionBtn');
-
-    btn.onclick = () => {
-        undoCallback();
-        toast.remove();
-    };
-
-    // Auto remove after 60 seconds
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.style.animation = 'slideInRight 0.3s ease-out reverse';
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 300);
-        }
-    }, 60000);
-}
-
-// Export data
-function exportData() {
-    if (AppState.families.length === 0) {
-        showToast('No data to export', 'warning');
-        return;
+        showToast('Backup completed successfully', 'success');
+    } catch (error) {
+        console.error('Backup failed:', error);
+        showToast('Backup failed', 'error');
     }
-
-    const choice = confirm('Export as CSV? (Click OK for CSV, Cancel for JSON)');
-    const timestamp = new Date().toISOString().split('T')[0];
-
-    if (choice) {
-        exportAsCSV(AppState.families, `family-data-${timestamp}.csv`);
-    } else {
-        exportAsJSON(AppState.families, `family-data-${timestamp}.json`);
-    }
-
-    showToast('Data exported successfully', 'success');
 }
 
 // Close modal when clicking outside
