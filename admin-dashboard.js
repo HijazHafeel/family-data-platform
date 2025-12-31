@@ -188,7 +188,7 @@ function renderUserTable(users) {
             <td>${sanitizeInput(user.fullName || 'N/A')}</td>
             <td>${sanitizeInput(user.email || 'N/A')}</td>
             <td>
-                <span class="user-badge" style="background: rgba(99,102,241,0.1); border:none; color: var(--primary-light);">
+                <span class="user-badge" style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-weight: 500;">
                     ${user.role}
                 </span>
             </td>

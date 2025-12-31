@@ -8,7 +8,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
@@ -16,24 +18,31 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="dashboard-title">
-                <h2>📝 Data Entry Portal</h2>
-                <p>Add and search family records</p>
+                <h2>
+                    <i data-lucide="edit-3" style="vertical-align: middle; margin-right: 8px;"></i>
+                    Data Entry Portal
+                </h2>
+                <p>Register and search family records</p>
             </div>
             <div class="user-info">
                 <span class="user-badge" id="userBadge">Staff</span>
-                <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    Logout
+                </button>
             </div>
         </header>
 
         <!-- Main Content -->
         <main class="dashboard-content">
             <!-- Quick Stats -->
-            <div class="stats-grid"
-                style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 2rem;">
+            <div class="stats-grid" style="margin-bottom: 2rem;">
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Total Families</span>
-                        <div class="stat-icon primary">👨‍👩‍👧‍👦</div>
+                        <div class="stat-icon primary">
+                            <i data-lucide="home"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="totalFamilies">0</div>
                 </div>
@@ -41,15 +50,21 @@
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Added Today</span>
-                        <div class="stat-icon success">📅</div>
+                        <div class="stat-icon success">
+                            <i data-lucide="calendar"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="addedToday">0</div>
                 </div>
             </div>
 
             <!-- Add Family Form -->
-            <div class="glass-container" style="padding: 2rem; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">➕ Add New Family</h3>
+            <div class="table-container" style="padding: 2.5rem; margin-bottom: 2.5rem;">
+                <h3 style="margin-bottom: 2rem; font-size: 1.25rem; font-weight: 700; color: var(--text-main);">
+                    <i data-lucide="user-plus"
+                        style="width: 20px; height: 20px; vertical-align: text-bottom; margin-right: 8px; color: var(--primary-color);"></i>
+                    Add New Family
+                </h3>
 
                 <form id="addFamilyForm">
                     <div class="form-grid">
@@ -98,29 +113,42 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom: 2rem;">
                         <label for="notes">Notes / Comments</label>
                         <textarea id="notes" class="form-input" rows="2"></textarea>
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
-                        <button type="submit" class="btn btn-primary">💾 Save Family</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+                            Clear Form
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-lucide="save" style="width: 18px; height: 18px;"></i>
+                            Save Family Data
+                        </button>
                     </div>
                 </form>
             </div>
 
             <!-- Search Section -->
-            <div class="glass-container" style="padding: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">🔍 Search Families</h3>
+            <div class="table-container" style="padding: 2.5rem;">
+                <h3 style="margin-bottom: 2rem; font-size: 1.25rem; font-weight: 700; color: var(--text-main);">
+                    <i data-lucide="search"
+                        style="width: 20px; height: 20px; vertical-align: text-bottom; margin-right: 8px; color: var(--primary-color);"></i>
+                    Search Records
+                </h3>
 
-                <div class="search-box" style="margin-bottom: 1.5rem;">
+                <div class="search-box" style="margin-bottom: 2rem;">
+                    <i data-lucide="search"
+                        style="width: 18px; height: 18px; position: absolute; left: 12px; color: var(--text-light);"></i>
                     <input type="text" id="searchInput" placeholder="Search by name, contact, or address..."
                         onkeyup="searchFamilies()" style="width: 100%;">
                 </div>
 
                 <div id="searchResults">
-                    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                    <p
+                        style="text-align: center; color: var(--text-light); padding: 3rem; background: var(--bg-subtle); border-radius: var(--radius-md); border: 1px dashed var(--border-main);">
                         Enter search terms above to find families
                     </p>
                 </div>
@@ -138,6 +166,9 @@
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
     <script src="data-entry.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>

@@ -8,7 +8,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
@@ -16,20 +18,31 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="dashboard-title">
-                <h2>🏠 Admin Dashboard</h2>
+                <h2>
+                    <i data-lucide="layout-dashboard" style="vertical-align: middle; margin-right: 8px;"></i>
+                    Admin Dashboard
+                </h2>
                 <p>Complete family data management</p>
             </div>
             <div class="user-info">
                 <span class="user-badge" id="userBadge">Admin</span>
-                <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    Logout
+                </button>
             </div>
         </header>
 
         <!-- Navigation Tabs -->
         <nav class="dashboard-nav">
-            <button class="nav-tab active" data-tab="families" onclick="switchTab('families')">👨‍👩‍👧‍👦
-                Families</button>
-            <button class="nav-tab" data-tab="users" onclick="switchTab('users')">👤 Users Management</button>
+            <button class="nav-tab active" data-tab="families" onclick="switchTab('families')">
+                <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+                Families
+            </button>
+            <button class="nav-tab" data-tab="users" onclick="switchTab('users')">
+                <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+                Users Management
+            </button>
         </nav>
 
         <!-- Main Content -->
@@ -39,7 +52,9 @@
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Total Families</span>
-                        <div class="stat-icon primary">👨‍👩‍👧‍👦</div>
+                        <div class="stat-icon primary">
+                            <i data-lucide="home"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="totalFamilies">0</div>
                 </div>
@@ -47,7 +62,9 @@
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Active Records</span>
-                        <div class="stat-icon success">✓</div>
+                        <div class="stat-icon success">
+                            <i data-lucide="check-circle-2"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="activeRecords">0</div>
                 </div>
@@ -55,7 +72,9 @@
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Total Members</span>
-                        <div class="stat-icon warning">👥</div>
+                        <div class="stat-icon warning">
+                            <i data-lucide="user-plus"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="totalMembers">0</div>
                 </div>
@@ -63,7 +82,9 @@
                 <div class="stat-card" onclick="switchTab('users')" style="cursor: pointer;">
                     <div class="stat-card-header">
                         <span class="stat-card-title">System Users</span>
-                        <div class="stat-icon primary">👤</div>
+                        <div class="stat-icon primary">
+                            <i data-lucide="user-cog"></i>
+                        </div>
                     </div>
                     <div class="stat-value" id="totalUsers">0</div>
                 </div>
@@ -81,14 +102,17 @@
                                     onkeyup="searchFamilies()">
                             </div>
                             <button class="btn btn-success btn-sm" onclick="openAddFamilyModal()">
-                                ➕ Add Family
+                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                                Add Family
                             </button>
                             <button class="btn btn-secondary btn-sm" onclick="exportData()">
-                                📥 Export Data
+                                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                                Export Data
                             </button>
                             <button class="btn btn-secondary btn-sm"
                                 onclick="window.location.href='backup-utility.html'">
-                                💾 Backup
+                                <i data-lucide="database" style="width: 14px; height: 14px;"></i>
+                                Backup
                             </button>
                         </div>
                     </div>
@@ -111,7 +135,7 @@
                             <tbody id="familyTableBody">
                                 <tr>
                                     <td colspan="9"
-                                        style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                        style="text-align: center; padding: 2.5rem; color: var(--text-light);">
                                         No family records found. Click "Add Family" to get started.
                                     </td>
                                 </tr>
@@ -128,6 +152,8 @@
                         <h3>System Users</h3>
                         <div class="table-actions">
                             <div class="search-box">
+                                <i data-lucide="search"
+                                    style="width: 16px; height: 16px; position: absolute; left: 12px; color: var(--text-light);"></i>
                                 <input type="text" id="userSearchInput" placeholder="Search users..."
                                     onkeyup="searchUsers()">
                             </div>
@@ -163,7 +189,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Add New Family</h3>
-                <button class="modal-close" onclick="closeFamilyModal()">×</button>
+                <button class="modal-close" onclick="closeFamilyModal()">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <form id="familyForm">
@@ -231,7 +259,10 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeFamilyModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveFamilyData()">Save Family</button>
+                <button class="btn btn-primary" onclick="saveFamilyData()">
+                    <i data-lucide="save" style="width: 18px; height: 18px;"></i>
+                    Save Family
+                </button>
             </div>
         </div>
     </div>
@@ -246,6 +277,10 @@
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
     <script src="admin-dashboard.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>
