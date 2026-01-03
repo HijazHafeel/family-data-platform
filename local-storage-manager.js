@@ -1,10 +1,11 @@
 // Local Storage Manager for Master Admin File Uploads
 // Uses IndexedDB to store files locally in the browser
+console.log('Master Device Manager: Loading...');
 
 const DB_NAME = 'FamilyFilesDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'familyFiles';
-let db = null;
+let localFileDB = null;
 
 // Initialize IndexedDB
 async function initLocalStorage() {
@@ -17,9 +18,9 @@ async function initLocalStorage() {
         };
 
         request.onsuccess = () => {
-            db = request.result;
+            localFileDB = request.result;
             console.log('IndexedDB initialized successfully');
-            resolve(db);
+            resolve(localFileDB);
         };
 
         request.onupgradeneeded = (event) => {
@@ -63,6 +64,10 @@ function setMasterDevice() {
     return false;
 }
 
+// Make functions globally available
+window.setMasterDevice = setMasterDevice;
+window.isMasterDevice = isMasterDevice;
+
 // Check if user can upload files (must be 'admin' AND on master device)
 function canUploadFiles() {
     const user = AppState.currentUser;
@@ -74,7 +79,7 @@ function canUploadFiles() {
 
 // Store file in IndexedDB
 async function storeLocalFile(familyId, file) {
-    if (!db) {
+    if (!localFileDB) {
         await initLocalStorage();
     }
 
@@ -110,7 +115,7 @@ async function storeLocalFile(familyId, file) {
                 uploadedBy: AppState.currentUser.username
             };
 
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const transaction = localFileDB.transaction([STORE_NAME], 'readwrite');
             const objectStore = transaction.objectStore(STORE_NAME);
             const request = objectStore.add(fileData);
 
@@ -141,12 +146,12 @@ async function storeLocalFile(familyId, file) {
 
 // Get all files for a specific family
 async function getLocalFiles(familyId) {
-    if (!db) {
+    if (!localFileDB) {
         await initLocalStorage();
     }
 
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const transaction = localFileDB.transaction([STORE_NAME], 'readonly');
         const objectStore = transaction.objectStore(STORE_NAME);
         const index = objectStore.index('familyId');
         const request = index.getAll(familyId);
@@ -163,12 +168,12 @@ async function getLocalFiles(familyId) {
 
 // Get a specific file by ID
 async function getLocalFile(fileId) {
-    if (!db) {
+    if (!localFileDB) {
         await initLocalStorage();
     }
 
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const transaction = localFileDB.transaction([STORE_NAME], 'readonly');
         const objectStore = transaction.objectStore(STORE_NAME);
         const request = objectStore.get(fileId);
 
@@ -184,12 +189,12 @@ async function getLocalFile(fileId) {
 
 // Delete a file from IndexedDB
 async function deleteLocalFile(fileId) {
-    if (!db) {
+    if (!localFileDB) {
         await initLocalStorage();
     }
 
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const transaction = localFileDB.transaction([STORE_NAME], 'readwrite');
         const objectStore = transaction.objectStore(STORE_NAME);
         const request = objectStore.delete(fileId);
 
@@ -229,12 +234,12 @@ async function downloadLocalFile(fileId) {
 
 // Get total storage usage
 async function getStorageUsage() {
-    if (!db) {
+    if (!localFileDB) {
         await initLocalStorage();
     }
 
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const transaction = localFileDB.transaction([STORE_NAME], 'readonly');
         const objectStore = transaction.objectStore(STORE_NAME);
         const request = objectStore.getAll();
 

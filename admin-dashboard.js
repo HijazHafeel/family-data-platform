@@ -199,7 +199,12 @@ function updateDeviceStatusUI() {
 
     if (!statusBadge) return;
 
-    const isMaster = typeof isMasterDevice === 'function' ? isMasterDevice() : false;
+    let isMaster = false;
+    if (typeof window.isMasterDevice === 'function') {
+        isMaster = window.isMasterDevice();
+    } else if (typeof isMasterDevice === 'function') {
+        isMaster = isMasterDevice();
+    }
 
     if (isMaster) {
         statusBadge.textContent = 'Authorized Master Device';
@@ -221,14 +226,46 @@ function updateDeviceStatusUI() {
 }
 
 async function handleMasterDeviceSetup() {
-    if (typeof setMasterDevice === 'function') {
-        const success = setMasterDevice();
-        if (success) {
-            updateDeviceStatusUI();
+    console.log('Authorization button clicked');
+
+    // --- INLINED FALLBACK LOGIC ---
+    if (typeof window.setMasterDevice !== 'function') {
+        console.warn('setMasterDevice not found globally. Defining fallback.');
+        window.setMasterDevice = function () {
+            const confirmed = confirm(
+                'Set this device as the Master Device?\n\n' +
+                'Only the Master Device can upload and manage files.\n' +
+                'This action cannot be easily undone.'
+            );
+            if (confirmed) {
+                localStorage.setItem('masterDeviceFlag', 'true');
+                localStorage.setItem('masterDeviceSetDate', new Date().toISOString());
+                showToast('This device is now set as the Master Device', 'success');
+                return true;
+            }
+            return false;
+        };
+
+        window.isMasterDevice = function () {
+            return localStorage.getItem('masterDeviceFlag') === 'true';
+        };
+    }
+    // -----------------------------
+
+    try {
+        if (typeof window.setMasterDevice === 'function') {
+            const success = window.setMasterDevice();
+            if (success) {
+                updateDeviceStatusUI();
+            }
+        } else {
+            // Should be covered by fallback, but double check
+            console.error('setMasterDevice failing even after fallback.');
+            alert('Critical Error: Authorization logic failed to initialize.');
         }
-    } else {
-        console.error('setMasterDevice function not found. Is local-storage-manager.js loaded?');
-        showToast('System component missing. Please refresh.', 'error');
+    } catch (error) {
+        console.error('Error in handleMasterDeviceSetup:', error);
+        alert('Error: ' + error.message);
     }
 }
 
